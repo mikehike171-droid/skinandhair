@@ -1,0 +1,96 @@
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.PresentingComplaintsService = void 0;
+const common_1 = require("@nestjs/common");
+const typeorm_1 = require("typeorm");
+let PresentingComplaintsService = class PresentingComplaintsService {
+    constructor(dataSource) {
+        this.dataSource = dataSource;
+    }
+    async createTablesIfNotExist() {
+        try {
+            await this.dataSource.query(`
+        CREATE TABLE IF NOT EXISTS patient_presenting_complaints (
+          id SERIAL PRIMARY KEY,
+          notes TEXT NOT NULL,
+          patient_id INTEGER NOT NULL,
+          created_by INTEGER NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+        }
+        catch (error) {
+            console.error('Error creating patient_presenting_complaints table:', error);
+        }
+    }
+    async savePatientPresentingComplaints(data, user) {
+        console.log('DEBUG: savePatientPresentingComplaints received:', data);
+        try {
+            await this.createTablesIfNotExist();
+            const { id, patient_id, notes } = data;
+            const numericId = id ? parseInt(id.toString()) : null;
+            const numericPatientId = parseInt(patient_id?.toString());
+            const created_by = user?.sub || user?.id || user?.userId || 1;
+            let result;
+            if (numericId) {
+                console.log('DEBUG: Updating complaint with ID:', numericId);
+                result = await this.dataSource.query(`UPDATE patient_presenting_complaints 
+                     SET notes = $1, updated_at = CURRENT_TIMESTAMP 
+                     WHERE id = $2 
+                     RETURNING *`, [notes, numericId]);
+            }
+            else {
+                console.log('DEBUG: Inserting new complaint for patient:', numericPatientId);
+                result = await this.dataSource.query(`INSERT INTO patient_presenting_complaints (notes, patient_id, created_by) 
+                     VALUES ($1, $2, $3) 
+                     RETURNING *`, [notes, numericPatientId, created_by]);
+            }
+            return { success: true, data: result[0] };
+        }
+        catch (error) {
+            console.error('Database error saving presenting complaints:', error);
+            throw new Error('Failed to save presenting complaints');
+        }
+    }
+    async getPatientPresentingComplaints(patientId) {
+        try {
+            await this.createTablesIfNotExist();
+            const result = await this.dataSource.query(`SELECT ppc.*, u.first_name, u.last_name 
+         FROM patient_presenting_complaints ppc
+         LEFT JOIN users u ON ppc.created_by = u.id
+         WHERE ppc.patient_id = $1
+         ORDER BY ppc.created_at DESC`, [parseInt(patientId)]);
+            return result;
+        }
+        catch (error) {
+            console.error('Database error fetching presenting complaints:', error);
+            throw new Error('Failed to fetch presenting complaints');
+        }
+    }
+    async deletePatientPresentingComplaint(id, user) {
+        try {
+            await this.dataSource.query(`DELETE FROM patient_presenting_complaints WHERE id = $1`, [id]);
+            return { success: true };
+        }
+        catch (error) {
+            console.error('Database error deleting presenting complaint:', error);
+            throw new Error('Failed to delete presenting complaint');
+        }
+    }
+};
+exports.PresentingComplaintsService = PresentingComplaintsService;
+exports.PresentingComplaintsService = PresentingComplaintsService = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [typeorm_1.DataSource])
+], PresentingComplaintsService);
+//# sourceMappingURL=presenting-complaints.service.js.map

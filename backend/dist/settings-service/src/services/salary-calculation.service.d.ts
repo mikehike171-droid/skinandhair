@@ -1,0 +1,56 @@
+import { Repository } from 'typeorm';
+import { User } from '../entities/user.entity';
+import { UserSalaryDetails } from '../entities/user-salary-details.entity';
+import { Attendance } from '../entities/attendance.entity';
+import { Holiday } from '../entities/holiday.entity';
+export declare class SalaryCalculationService {
+    private userRepository;
+    private salaryRepository;
+    private attendanceRepository;
+    private holidayRepository;
+    constructor(userRepository: Repository<User>, salaryRepository: Repository<UserSalaryDetails>, attendanceRepository: Repository<Attendance>, holidayRepository: Repository<Holiday>);
+    calculateMonthlySalary(locationId: number, month: number, year: number): Promise<any[]>;
+    calculateUserSalary(userId: number, locationId: number, month: number, year: number): Promise<{
+        userId: number;
+        userName: string;
+        message: string;
+        month?: undefined;
+        year?: undefined;
+        monthlySalary?: undefined;
+        dailySalary?: undefined;
+        totalDaysInMonth?: undefined;
+        expectedWorkingDays?: undefined;
+        totalWorkedDays?: undefined;
+        totalWorkedHours?: undefined;
+        approvedLeaveDays?: undefined;
+        pendingLeaveDays?: undefined;
+        absentDays?: undefined;
+        holidayDays?: undefined;
+        shortHours?: undefined;
+        extraDaysWorked?: undefined;
+        salaryAddition?: undefined;
+        salaryDeduction?: undefined;
+        finalSalary?: undefined;
+    } | {
+        userId: number;
+        userName: string;
+        month: number;
+        year: number;
+        monthlySalary: number;
+        dailySalary: number;
+        totalDaysInMonth: number;
+        expectedWorkingDays: number;
+        totalWorkedDays: number;
+        totalWorkedHours: number;
+        approvedLeaveDays: number;
+        pendingLeaveDays: number;
+        absentDays: number;
+        holidayDays: number;
+        shortHours: number;
+        extraDaysWorked: number;
+        salaryAddition: number;
+        salaryDeduction: number;
+        finalSalary: number;
+        message?: undefined;
+    }>;
+}
