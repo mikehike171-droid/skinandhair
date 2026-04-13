@@ -1,6 +1,6 @@
 import authService from './authService';
 
-const API_URL = 'http://localhost:3007';
+const API_URL = 'http://98.94.89.173:3007';
 
 const getAuthHeaders = () => ({
   'Content-Type': 'application/json',

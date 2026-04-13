@@ -74,7 +74,7 @@ export default function PatientRegistration() {
         }
       };
 
-      const response = await fetch('http://localhost:3002/patients/register', {
+      const response = await fetch('http://98.94.89.173:3002/patients/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,7 +1,7 @@
 const http = require('http');
 
 const options = {
-  hostname: 'localhost',
+  hostname: '98.94.89.173',
   port: 3002,
   path: '/api/v1/pharmacy/billed-products',
   method: 'GET',
@@ -11,7 +11,7 @@ const options = {
 const { Pool } = require('pg');
 const pool = new Pool({
   user: 'postgres',
-  host: 'localhost',
+  host: '98.94.89.173',
   database: 'skinhair',
   password: '12345',
   port: 5432,

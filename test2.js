@@ -1,5 +1,5 @@
 const { Pool } = require('pg')
-const pool = new Pool({ user: 'postgres', host: 'localhost', database: 'skinhair', password: '12345', port: 5432 })
+const pool = new Pool({ user: 'postgres', host: '98.94.89.173', database: 'skinhair', password: '12345', port: 5432 })
 async function run() {
   const sr = await pool.query("SELECT name FROM service_product WHERE type ILIKE 'service'")
   const serviceNames = new Set(sr.rows.map(r => r.name.toLowerCase().trim()))
