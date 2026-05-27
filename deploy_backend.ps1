@@ -3,7 +3,7 @@
 
 # --- Configuration ---
 $IP = "13.62.241.115"
-$KEY = "C:\SSHKeys\skinhair.pem"
+$KEY = ".\skinhair.pem"
 $USR = "ubuntu"
 $DIR = "/home/ubuntu/skinandhair"
 

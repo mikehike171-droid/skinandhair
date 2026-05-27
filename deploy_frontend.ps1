@@ -1,6 +1,6 @@
 $IP = "13.62.241.115"
 $USR = "ubuntu"
-$KEY = "c:\skin&hair\skinhair.pem"
+$KEY = ".\skinhair.pem"
 $DIR = "/home/ubuntu/skinandhair"
 
 Write-Host "--- Starting Frontend Deployment ---" -ForegroundColor Cyan

@@ -40,6 +40,7 @@ scp -i "$SSH_KEY" "backend_build.tar.gz" "frontend_build.tar.gz" "${USER}@${SERV
 # Transfer secrets
 scp -i "$SSH_KEY" "backend/settings-service/.env" "${USER}@${SERVER_IP}:${REMOTE_PATH}/backend/settings-service/.env"
 scp -i "$SSH_KEY" "frontend/.env.local" "${USER}@${SERVER_IP}:${REMOTE_PATH}/frontend/.env.local"
+scp -i "$SSH_KEY" "clean_logs.sh" "${USER}@${SERVER_IP}:/home/ubuntu/clean_logs.sh"
 
 # 4. Remote Extraction and Cleanup
 Write-Host "`n[4/5] Extracting artifacts on server..." -ForegroundColor Yellow
@@ -70,6 +71,11 @@ pm2 start npm --name frontend --time -- start
 echo "Verifying service status..."
 pm2 status
 pm2 list
+
+echo "Setting up hourly log cleanup..."
+chmod +x /home/ubuntu/clean_logs.sh
+(crontab -l 2>/dev/null | grep -F "clean_logs.sh") || (crontab -l 2>/dev/null; echo "0 * * * * /home/ubuntu/clean_logs.sh >> /home/ubuntu/clean_logs.log 2>&1") | crontab -
+echo "Log cleanup cron job registered."
 
 # Clean up artifacts
 cd $REMOTE_PATH
