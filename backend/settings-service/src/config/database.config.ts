@@ -1,0 +1,32 @@
+import { Injectable } from '@nestjs/common';
+import { TypeOrmModuleOptions, TypeOrmOptionsFactory } from '@nestjs/typeorm';
+
+@Injectable()
+export class DatabaseConfig implements TypeOrmOptionsFactory {
+  createTypeOrmOptions(): TypeOrmModuleOptions {
+    return {
+      type: 'postgres',
+      host: process.env.DB_HOST || '98.94.89.173',
+      port: parseInt(process.env.DB_PORT) || 5432,
+      username: process.env.DB_USERNAME || 'postgres',
+      password: process.env.DB_PASSWORD || 'password',
+      database: process.env.DB_NAME || 'postgres',
+      entities: [__dirname + '/../**/*.entity{.ts,.js}'],
+      autoLoadEntities: true,
+      migrations: [__dirname + '/../migrations/*{.ts,.js}'],
+      migrationsRun: true,
+      synchronize: false,
+      dropSchema: false,
+      logging: true,
+      retryAttempts: 3,
+      retryDelay: 3000,
+      ssl: process.env.DB_HOST === '127.0.0.1' || process.env.DB_HOST === 'localhost' || process.env.DB_HOST === '98.94.89.173' ? false : {
+        rejectUnauthorized: false,
+      },
+      extra: {
+        connectionTimeoutMillis: 10000,
+        query_timeout: 10000,
+      },
+    };
+  }
+}

@@ -318,7 +318,7 @@ export default function PatientBillDiscuss() {
 
   const calculateSubtotal = () => {
     return billItems
-      .filter(item => item.type === 'Service')
+      .filter(item => item.type === 'Service' || item.type === 'Product')
       .reduce((acc, item) => {
         const price = parseFloat(item.price) || 0
         const qty = parseInt(item.quantity) || 0
@@ -328,7 +328,7 @@ export default function PatientBillDiscuss() {
 
   const calculateTotalDiscount = () => {
     return billItems
-      .filter(item => item.type === 'Service')
+      .filter(item => item.type === 'Service' || item.type === 'Product')
       .reduce((acc, item) => {
         const price = parseFloat(item.price) || 0
         const qty = parseInt(item.quantity) || 0
@@ -1523,15 +1523,9 @@ export default function PatientBillDiscuss() {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <span className={cn(
-                        "text-sm font-black text-gray-900 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100",
-                        item.type === 'Product' && "text-gray-400 line-through opacity-50"
-                      )}>
+                      <span className="text-sm font-black text-gray-900 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
                         ₹{((parseFloat(item.price) || 0) * (parseInt(item.quantity) || 0)).toLocaleString()}
                       </span>
-                      {item.type === 'Product' && (
-                        <p className="text-[9px] font-bold text-orange-500 uppercase tracking-tighter mt-1 mr-2">Excluded</p>
-                      )}
                     </td>
                     <td className="px-6 py-4 text-center">
                       <Button
@@ -1553,11 +1547,6 @@ export default function PatientBillDiscuss() {
                       <div className="flex items-center gap-3">
                         <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest flex flex-col items-end">
                           <span>{billingMode === 'package' ? 'Selected Package Total:' : 'Bill Items Section Grand Total:'}</span>
-                          {billItems.some(item => item.type === 'Product') && (
-                            <span className="text-orange-500 normal-case font-bold text-[9px] bg-orange-50 px-2 py-0.5 rounded-full border border-orange-100 mt-0.5">
-                              (Excludes Products)
-                            </span>
-                          )}
                         </span>
                         <span className="text-2xl font-black text-gray-900">
                           ₹{(billingMode === 'package' ? (newPackage.package_price || 0) : calculateSubtotal()).toLocaleString()}

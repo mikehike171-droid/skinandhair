@@ -39,12 +39,12 @@ export default function LoginPage() {
     localStorage.removeItem('loginError')
     try {
       await authService.login(formData.username, formData.password)
-      
+
       // Get user's menu permissions and redirect to first accessible page
       const sideMenuData = localStorage.getItem('sidemenu')
       if (sideMenuData) {
         const parsedMenu = JSON.parse(sideMenuData)
-        
+
         // Find first accessible menu item
         for (const item of parsedMenu) {
           if (item.menu.sub_menu.length === 0 && item.menu.path) {
@@ -58,7 +58,7 @@ export default function LoginPage() {
           }
         }
       }
-      
+
       // Fallback to dashboard if no menu found
       window.location.href = '/admin/dashboard'
     } catch (error: any) {
@@ -70,15 +70,15 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{backgroundColor: '#F5F5F7'}}>
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: '#F5F5F7' }}>
       <div className="w-full max-w-md">
         {/* Logo and Title */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
-            <img 
-              src="/images/vithyou.png" 
-              alt="Pranaam Logo" 
-              className="h-16 w-auto"
+            <img
+              src="/images/vithyou.png"
+              alt="Pranaam Logo"
+              className="h-50 w-auto"
             />
           </div>
           {/* <h1 className="text-3xl font-bold text-gray-900 mb-2">Pranam HMS</h1>

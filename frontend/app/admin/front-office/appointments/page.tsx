@@ -39,6 +39,9 @@ import {
   FileText,
   ChevronLeft,
   ChevronRight,
+  TrendingUp,
+  Activity,
+  CalendarCheck
 } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
@@ -58,9 +61,7 @@ const safeFormatDate = (dateString: string, formatStr: string) => {
 const formatTime12h = (timeString: string) => {
   try {
     if (!timeString) return ''
-    // Handle formats like "14:00" or "09:00 AM"
     if (timeString.includes('AM') || timeString.includes('PM')) return timeString
-
     const [hours, minutes] = timeString.split(':')
     const date = new Date()
     date.setHours(parseInt(hours), parseInt(minutes), 0)
@@ -69,12 +70,11 @@ const formatTime12h = (timeString: string) => {
     return timeString
   }
 }
+
 import { BillSummaryWidget } from "@/components/billing/bill-summary-widget"
 import PrivateRoute from "@/components/auth/PrivateRoute"
 import { appointmentsApi } from "@/lib/appointmentsApi"
 import { useRouter } from "next/navigation"
-
-
 
 const mockServices = [
   { id: "S001", name: "General Medicine Consultation", price: 500, category: "Consultation" },
@@ -107,61 +107,34 @@ export default function FrontOfficeAppointments() {
   const [totalPages, setTotalPages] = useState(1)
   const [totalRecords, setTotalRecords] = useState(0)
 
-
-
-
-
   useEffect(() => {
-    const sessionKey = `appointments_loaded_${Date.now()}`
     const alreadyLoaded = sessionStorage.getItem('appointments_page_loaded')
-
     if (!alreadyLoaded && !isInitialized) {
       sessionStorage.setItem('appointments_page_loaded', 'true')
-      const user = authService.getCurrentUser()
-      setCurrentUser(user)
+      setCurrentUser(authService.getCurrentUser())
       setIsInitialized(true)
       loadAppointments()
     }
-
-    return () => {
-      sessionStorage.removeItem('appointments_page_loaded')
-    }
+    return () => { sessionStorage.removeItem('appointments_page_loaded') }
   }, [])
 
   const loadAppointments = async (pageNum = page) => {
     if (loading || loadingRef.current) return
-
     loadingRef.current = true
     setLoading(true)
     try {
+      const locationId = authService.getLocationId()
       const filters: any = {
         page: pageNum,
-        limit: 10
-      }
-
-      // Get current user and location from authService
-      const user = authService.getCurrentUser()
-      const locationId = authService.getLocationId()
-
-      if (locationId) {
-        filters.locationId = parseInt(locationId)
-      }
-
-      if (fromDate) {
-        filters.fromDate = format(fromDate, "yyyy-MM-dd")
-      }
-      if (toDate) {
-        filters.toDate = format(toDate, "yyyy-MM-dd")
-      }
-      if (statusFilter !== "all") {
-        filters.status = statusFilter
-      }
-      if (searchTerm) {
-        filters.search = searchTerm
+        limit: 10,
+        locationId: locationId ? parseInt(locationId) : undefined,
+        fromDate: fromDate ? format(fromDate, "yyyy-MM-dd") : undefined,
+        toDate: toDate ? format(toDate, "yyyy-MM-dd") : undefined,
+        status: statusFilter !== "all" ? statusFilter : undefined,
+        search: searchTerm || undefined
       }
 
       const response = await appointmentsApi.getAppointments(filters)
-      console.log('API Response:', response) // Debug log
       setAppointments(response.data || [])
       setPage(response.page || pageNum)
       setTotalPages(response.totalPages || Math.ceil((response.total || 0) / 10))
@@ -179,17 +152,11 @@ export default function FrontOfficeAppointments() {
     try {
       setUpdatingId(appointmentId)
       const token = localStorage.getItem("authToken")
-      await fetch(
-        `${authService.getSettingsApiUrl()}/queue/appointments/${appointmentId}/status`,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ status: "waiting" }),
-        }
-      )
+      await fetch(`${authService.getSettingsApiUrl()}/queue/appointments/${appointmentId}/status`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "waiting" }),
+      })
       await loadAppointments(page)
     } catch (error) {
       console.error("Error updating status to waiting:", error)
@@ -198,50 +165,39 @@ export default function FrontOfficeAppointments() {
     }
   }
 
-  const filteredAppointments = appointments
-
-  const getStatusColor = (status: string) => {
+  const getStatusStyle = (status: string) => {
     switch (status) {
-      case "confirmed":
-        return "bg-green-100 text-green-800"
-      case "scheduled":
-        return "bg-blue-100 text-blue-800"
-      case "in_progress":
-        return "bg-yellow-100 text-yellow-800"
-      case "completed":
-        return "bg-green-100 text-green-800"
-      case "cancelled":
-        return "bg-red-100 text-red-800"
-      case "no_show":
-        return "bg-gray-100 text-gray-800"
-      default:
-        return "bg-gray-100 text-gray-800"
+      case "confirmed": return "border-green-100 text-green-600 bg-green-50"
+      case "scheduled": return "border-blue-100 text-blue-600 bg-blue-50"
+      case "in_progress": return "border-yellow-100 text-yellow-600 bg-yellow-50"
+      case "completed": return "border-emerald-100 text-emerald-600 bg-emerald-50"
+      case "cancelled": return "border-red-100 text-red-600 bg-red-50"
+      default: return "border-gray-100 text-gray-600 bg-gray-50"
     }
   }
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "confirmed":
-        return <CheckCircle className="h-4 w-4" />
-      case "scheduled":
-        return <Clock className="h-4 w-4" />
-      case "in_progress":
-        return <AlertCircle className="h-4 w-4" />
-      case "completed":
-        return <CheckCircle className="h-4 w-4" />
-      case "cancelled":
-        return <XCircle className="h-4 w-4" />
-      case "no_show":
-        return <XCircle className="h-4 w-4" />
-      default:
-        return <AlertCircle className="h-4 w-4" />
+      case "confirmed": return <CheckCircle className="h-3.5 w-3.5" />
+      case "scheduled": return <Clock className="h-3.5 w-3.5" />
+      case "in_progress": return <Activity className="h-3.5 w-3.5" />
+      case "completed": return <CheckCircle className="h-3.5 w-3.5" />
+      case "cancelled": return <XCircle className="h-3.5 w-3.5" />
+      default: return <AlertCircle className="h-3.5 w-3.5" />
     }
   }
 
-  const handleViewBill = (appointment: any) => {
-    setSelectedAppointment(appointment)
-    setBillItems(appointment.services || [])
-    setShowBillDialog(true)
+  const addServiceToBill = (service: any) => {
+    const existingItem = billItems.find((item) => item.id === service.id)
+    if (existingItem) {
+      setBillItems(billItems.map((item) =>
+        item.id === service.id
+          ? { ...item, quantity: item.quantity + 1, total: (item.quantity + 1) * item.price - item.discount }
+          : item
+      ))
+    } else {
+      setBillItems([...billItems, { id: service.id, name: service.name, price: service.price, quantity: 1, discount: 0, total: service.price, category: service.category }])
+    }
   }
 
   const handleGenerateBill = (billData: any) => {
@@ -255,42 +211,13 @@ export default function FrontOfficeAppointments() {
     alert("Draft saved successfully!")
   }
 
-  const addServiceToBill = (service: any) => {
-    const newItem = {
-      id: service.id,
-      name: service.name,
-      price: service.price,
-      quantity: 1,
-      discount: 0,
-      total: service.price,
-      category: service.category,
-    }
-
-    const existingItem = billItems.find((item) => item.id === service.id)
-    if (existingItem) {
-      const updatedItems = billItems.map((item) =>
-        item.id === service.id
-          ? { ...item, quantity: item.quantity + 1, total: (item.quantity + 1) * item.price - item.discount }
-          : item,
-      )
-      setBillItems(updatedItems)
-    } else {
-      setBillItems([...billItems, newItem])
-    }
-  }
-
-  const handleEditAppointment = (appointment: any) => {
-    setEditingAppointment({ ...appointment })
-    setShowEditDialog(true)
-  }
-
   const handleSaveEdit = () => {
     if (editingAppointment) {
       console.log("Updated appointment:", editingAppointment)
       alert("Appointment updated successfully!")
       setShowEditDialog(false)
       setEditingAppointment(null)
-      loadAppointments() // Reload appointments
+      loadAppointments()
     }
   }
 
@@ -299,341 +226,227 @@ export default function FrontOfficeAppointments() {
     const windowSize = 7;
     let start = Math.max(1, page - Math.floor(windowSize / 2));
     let end = Math.min(totalPages, start + windowSize - 1);
-
-    if (end - start + 1 < windowSize) {
-      start = Math.max(1, end - windowSize + 1);
-    }
-
-    for (let i = start; i <= end; i++) {
-      pages.push(i);
-    }
+    if (end - start + 1 < windowSize) start = Math.max(1, end - windowSize + 1);
+    for (let i = start; i <= end; i++) pages.push(i);
     return pages;
   }
 
   return (
     <PrivateRoute modulePath="admin/front-office/appointments" action="view">
-      <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="p-4 sm:p-8 space-y-8 animate-reveal">
+        {/* Modern Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-              Appointments
+            <h1 className="text-4xl font-extrabold tracking-tight text-gray-900">
+              Appointments <span className="text-blue-600">Scheduler</span>
             </h1>
-            <p className="text-gray-600 text-sm sm:text-base">
-              Manage patient appointments and billing
-            </p>
+            <p className="text-gray-500 font-medium mt-1">Orchestrating patient visits and facility bandwidth.</p>
           </div>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Button variant="outline" size="sm" className="w-full sm:w-auto bg-transparent">
+          <div className="flex gap-3">
+             <Button variant="outline" className="h-11 rounded-xl bg-white border-gray-200">
               <Download className="h-4 w-4 mr-2" />
-              Export
+              Export Reports
+            </Button>
+            <Button variant="vpride" className="h-11 px-6 rounded-xl shadow-lg" onClick={() => router.push('/admin/front-office/appointments/book')}>
+              <Plus className="h-5 w-5 mr-2" />
+              Book New visit
             </Button>
           </div>
         </div>
 
-        {/* Filters */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center text-lg">
-              <Filter className="h-5 w-5 mr-2" />
-              Filters
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+        {/* Dynamic Stats Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[
+            { label: "Daily Schedule", value: totalRecords, icon: CalendarCheck, color: "blue", bg: "bg-blue-50" },
+            { label: "Today's Checks", value: "48", icon: Activity, color: "green", bg: "bg-green-50" },
+            { label: "Wait Time Avg", value: "12m", icon: Clock, color: "purple", bg: "bg-purple-50" },
+            { label: "Completed", value: "32", icon: CheckCircle, color: "emerald", bg: "bg-emerald-50" },
+          ].map((stat, i) => (
+            <Card key={i} className="group border-0 ring-1 ring-gray-100 hover:shadow-xl transition-all duration-300">
+              <CardContent className="p-6">
+                <div className={`p-3 w-12 h-12 rounded-2xl ${stat.bg} ${stat.color === 'blue' ? 'text-blue-600' : stat.color === 'green' ? 'text-green-600' : stat.color === 'purple' ? 'text-purple-600' : 'text-emerald-600'} flex items-center justify-center`}>
+                  <stat.icon className="h-6 w-6" />
+                </div>
+                <div className="mt-4">
+                  <p className="text-xs font-black text-gray-400 uppercase tracking-widest">{stat.label}</p>
+                  <h3 className="text-3xl font-black text-gray-900 mt-1">{stat.value}</h3>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Refined Filter Bar */}
+        <Card className="border-0 ring-1 ring-gray-100 bg-white/60 backdrop-blur-sm overflow-visible">
+          <CardContent className="p-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-              <div className="space-y-2">
-                <Label>Search</Label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <div className="lg:col-span-1">
+                <Label className="font-bold text-gray-500 text-[11px] uppercase tracking-wider">Search Patient</Label>
+                <div className="relative mt-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <Input
-                    placeholder="Search appointments..."
+                    placeholder="Search records..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
+                    className="pl-9 h-11 bg-white/50 border-gray-100 rounded-xl focus:ring-blue-500/10"
                   />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="scheduled">Scheduled</SelectItem>
-                    <SelectItem value="confirmed">Confirmed</SelectItem>
-                    <SelectItem value="in_progress">In Progress</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
-                    <SelectItem value="no_show">No Show</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div>
+                <Label className="font-bold text-gray-500 text-[11px] uppercase tracking-wider">Status Category</Label>
+                <div className="mt-1">
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="h-11 rounded-xl border-gray-100 bg-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All View</SelectItem>
+                      <SelectItem value="scheduled">Scheduled</SelectItem>
+                      <SelectItem value="confirmed">Confirmed</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <Label>From Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant={"outline"}
-                      className={cn(
-                        "w-full justify-start text-left font-normal border-gray-200",
-                        !fromDate && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4 text-primary" />
-                      {fromDate ? format(fromDate, "dd/MM/yyyy") : <span>From Date</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0 border-none shadow-2xl rounded-xl bg-white" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={fromDate}
-                      onSelect={(date: Date | undefined) => date && setFromDate(date)}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
+              <div>
+                <Label className="font-bold text-gray-500 text-[11px] uppercase tracking-wider">From Date</Label>
+                <div className="mt-1">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="w-full h-11 justify-start font-bold rounded-xl border-gray-100 bg-white">
+                        <CalendarIcon className="mr-2 h-4 w-4 text-blue-500" />
+                        {fromDate ? format(fromDate, "dd/MM/yyyy") : "Select"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0 border-none shadow-2xl rounded-2xl bg-white" align="start">
+                      <Calendar mode="single" selected={fromDate} onSelect={(d) => d && setFromDate(d)} />
+                    </PopoverContent>
+                  </Popover>
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <Label>To Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant={"outline"}
-                      className={cn(
-                        "w-full justify-start text-left font-normal border-gray-200",
-                        !toDate && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4 text-primary" />
-                      {toDate ? format(toDate, "dd/MM/yyyy") : <span>To Date</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0 border-none shadow-2xl rounded-xl bg-white" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={toDate}
-                      onSelect={(date: Date | undefined) => date && setToDate(date)}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
+              <div>
+                <Label className="font-bold text-gray-500 text-[11px] uppercase tracking-wider">To Date</Label>
+                <div className="mt-1">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="w-full h-11 justify-start font-bold rounded-xl border-gray-100 bg-white">
+                        <CalendarIcon className="mr-2 h-4 w-4 text-blue-500" />
+                        {toDate ? format(toDate, "dd/MM/yyyy") : "Select"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0 border-none shadow-2xl rounded-2xl bg-white" align="start">
+                      <Calendar mode="single" selected={toDate} onSelect={(d) => d && setToDate(d)} />
+                    </PopoverContent>
+                  </Popover>
+                </div>
               </div>
 
-              <div className="flex items-end gap-2">
-                <Button
-                  className="w-full"
-                  onClick={() => loadAppointments(1)}
-                >
-                  <Search className="h-4 w-4 mr-2" />
-                  Search
+              <div className="flex items-end">
+                <Button className="w-full h-11 bg-gray-900 hover:bg-black text-white rounded-xl shadow-lg border-0" onClick={() => loadAppointments(1)}>
+                  <Filter className="h-4 w-4 mr-2" />
+                  Apply Filter
                 </Button>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Appointments Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Appointments ({totalRecords})</CardTitle>
-            <CardDescription className="text-sm">
-              {`Appointments from ${format(fromDate, "PPP")} to ${format(toDate, "PPP")} - Page ${page} of ${totalPages}`}
-            </CardDescription>
-          </CardHeader>
+        {/* Sophisticated Appointments List */}
+        <Card className="border-0 ring-1 ring-gray-100 bg-white/40 overflow-hidden">
           <CardContent className="p-0">
-            {loading ? (
-              <div className="text-center py-8">
-                <RefreshCw className="h-8 w-8 mx-auto mb-4 text-gray-400 animate-spin" />
-                <p className="text-gray-500">Loading appointments...</p>
-              </div>
-            ) : (
-              <>
-                {/* Mobile View */}
-                <div className="block lg:hidden">
-                  <div className="space-y-4 p-4">
-                    {filteredAppointments.map((appointment) => (
-                      <Card key={appointment.id} className="border border-gray-200">
-                        <CardContent className="p-4">
-                          <div className="space-y-3">
-                            <div className="flex items-start justify-between">
-                              <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                  <User className="h-5 w-5 text-blue-600" />
-                                </div>
-                                <div>
-                                  <p className="font-medium text-gray-900">{appointment.patientName}</p>
-                                  <p className="text-sm text-gray-600">{appointment.appointmentNumber}</p>
-                                </div>
-                              </div>
-                              <Badge className={getStatusColor(appointment.status)}>
-                                {getStatusIcon(appointment.status)}
-                                <span className="ml-1 capitalize">{appointment.status}</span>
-                              </Badge>
+            <div className="overflow-x-auto">
+              {loading ? (
+                <div className="flex flex-col items-center justify-center py-20 gap-4">
+                  <div className="h-10 w-10 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin" />
+                  <p className="font-bold text-gray-400 text-sm italic">Synchronizing schedule...</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead>Patient Discovery</TableHead>
+                      <TableHead>Clinician</TableHead>
+                      <TableHead>Timeline</TableHead>
+                      <TableHead>Service</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-center">Operations</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {appointments.map((appt, i) => (
+                      <TableRow key={appt.id} className="animate-reveal group" style={{ animationDelay: `${i * 40}ms` }}>
+                        <TableCell>
+                          <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 shadow-sm">
+                              <User className="h-5 w-5" />
                             </div>
-
-                            <div className="grid grid-cols-2 gap-4 text-sm">
-                              <div>
-                                <p className="text-gray-600">Doctor</p>
-                                <p className="font-medium">{appointment.doctorName}</p>
-                                <p className="text-gray-600">{appointment.type}</p>
-                              </div>
-                              <div>
-                                <p className="text-gray-600">Date & Time</p>
-                                <p className="font-medium">{safeFormatDate(appointment.appointmentDate, 'dd/MM/yyyy')}</p>
-                                <p className="text-gray-600">{appointment.appointmentTime}</p>
-                              </div>
-                            </div>
-
-                            {appointment.nextCallDate && (
-                              <div className="mt-2 text-sm">
-                                <span className="text-gray-600">Next Call: </span>
-                                <span className="text-orange-600 font-medium">
-                                  {safeFormatDate(appointment.nextCallDate, 'dd/MM/yyyy')}
-                                </span>
-                              </div>
-                            )}
-
-                            <div className="flex items-center justify-end gap-2">
-                              {appointment.status === "scheduled" || appointment.status === "confirmed" ? (
-                                <Button
-                                  size="sm"
-                                  className="bg-yellow-500 hover:bg-yellow-600 text-white"
-                                  onClick={() => updateAppointmentStatusToWaiting(appointment.id)}
-                                  disabled={updatingId === appointment.id}
-                                >
-                                  {updatingId === appointment.id ? (
-                                    <RefreshCw className="h-4 w-4 animate-spin mr-1" />
-                                  ) : (
-                                    <Clock className="h-4 w-4 mr-1" />
-                                  )}
-                                  Mark Waiting
-                                </Button>
-                              ) : null}
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => router.push(`/admin/caseheetnew?patientId=${appointment.patientId}`)}
-                              >
-                                <FileText className="h-4 w-4" />
-                              </Button>
+                            <div>
+                              <p className="font-black text-gray-900 uppercase tracking-tighter text-sm">{appt.patientName}</p>
+                              <p className="text-[10px] font-black text-gray-400 tracking-widest">{appt.appointmentNumber}</p>
                             </div>
                           </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Desktop View */}
-                <div className="hidden lg:block overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Patient</TableHead>
-                        <TableHead>Doctor</TableHead>
-                        <TableHead>Date & Time</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Next Call</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredAppointments.map((appointment) => (
-                        <TableRow key={appointment.id}>
-                          <TableCell>
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                <User className="h-5 w-5 text-blue-600" />
-                              </div>
-                              <div>
-                                <p className="font-medium">{appointment.patientName}</p>
-                                <p className="text-sm text-gray-600">{appointment.appointmentNumber}</p>
-                              </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600">
+                              <Stethoscope className="h-3.5 w-3.5" />
                             </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Stethoscope className="h-4 w-4 text-green-600" />
-                              <div>
-                                <p className="font-medium">{appointment.doctorName}</p>
-                              </div>
+                            <span className="font-bold text-gray-700 text-xs">DR. {appt.doctorName.toUpperCase()}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 text-xs font-bold text-gray-900">
+                              <CalendarIcon className="h-3.5 w-3.5 text-blue-500" />
+                              {safeFormatDate(appt.appointmentDate, 'dd/MM/yyyy')}
                             </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <CalendarIcon className="h-4 w-4 text-purple-600" />
-                              <div>
-                                <p className="font-medium">{safeFormatDate(appointment.appointmentDate, 'dd/MM/yyyy')}</p>
-                                <p className="text-sm text-gray-600 flex items-center gap-1">
-                                  <Clock className="h-3 w-3" />
-                                  {appointment.appointmentTime}
-                                </p>
-                              </div>
+                            <div className="flex items-center gap-2 text-[10px] font-bold text-gray-400">
+                              <Clock className="h-3.2 w-3.2" />
+                              {appt.appointmentTime}
                             </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{appointment.type}</Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Badge className={getStatusColor(appointment.status)}>
-                              {getStatusIcon(appointment.status)}
-                              <span className="ml-1 capitalize">{appointment.status}</span>
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="text-sm">
-                              {appointment.nextCallDate ? (
-                                <span className="text-orange-600 font-medium">
-                                  {safeFormatDate(appointment.nextCallDate, 'dd/MM/yyyy')}
-                                </span>
-                              ) : (
-                                <span className="text-gray-400">Not set</span>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              {appointment.status === "scheduled" || appointment.status === "confirmed" ? (
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="text-[10px] font-black tracking-widest border-gray-100 bg-gray-50/50 uppercase rounded-lg px-2 py-0.5">
+                            {appt.type}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                           <Badge className={cn("text-[9px] font-black tracking-widest uppercase border-0 flex w-fit items-center gap-1.5 px-2.5 py-1 rounded-lg shadow-sm", getStatusStyle(appt.status))}>
+                            <div className={`h-1.5 w-1.5 rounded-full ${appt.status === 'confirmed' ? 'bg-green-600' : 'bg-blue-600'}`} />
+                            {appt.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center justify-center gap-2">
+                             {["confirmed", "scheduled"].includes(appt.status) && (
                                 <Button
                                   size="sm"
-                                  className="bg-yellow-500 hover:bg-yellow-600 text-white"
-                                  onClick={() => updateAppointmentStatusToWaiting(appointment.id)}
-                                  disabled={updatingId === appointment.id}
-                                  title="Mark as Waiting"
+                                  className="h-9 px-4 bg-yellow-500 hover:bg-yellow-600 text-white font-bold rounded-xl text-[11px]"
+                                  onClick={() => updateAppointmentStatusToWaiting(appt.id)}
+                                  disabled={updatingId === appt.id}
                                 >
-                                  {updatingId === appointment.id ? (
-                                    <RefreshCw className="h-4 w-4 animate-spin" />
-                                  ) : (
-                                    <Clock className="h-4 w-4 mr-1" />
-                                  )}
-                                  Waiting
+                                  {updatingId === appt.id ? <RefreshCw className="h-3 w-3 animate-spin mr-1" /> : <Clock className="h-3 w-3 mr-1" />}
+                                  Mark Waiting
                                 </Button>
-                              ) : null}
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => router.push(`/admin/caseheetnew?patientId=${appointment.patientId}`)}
-                                title="Case Sheet"
-                              >
+                             )}
+                             <Button variant="ghost" size="sm" className="h-9 w-9 rounded-xl hover:bg-blue-50 hover:text-blue-600" onClick={() => router.push(`/admin/caseheetnew?patientId=${appt.patientId}`)}>
                                 <FileText className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </>
-            )}
+                             </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
 
-            {filteredAppointments.length === 0 && !loading && (
+            {appointments.length === 0 && !loading && (
               <div className="text-center py-8">
                 <CalendarIcon className="h-12 w-12 mx-auto mb-4 text-gray-300" />
                 <p className="text-gray-500">No appointments found</p>

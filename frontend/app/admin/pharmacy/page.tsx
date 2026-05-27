@@ -12,7 +12,7 @@ import authService from "@/lib/authService"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, Receipt, CreditCard, DollarSign, Calendar, Clock, Info, Check, X, Package, ChevronLeft, PackageCheck, Trash2, Plus, User as UserIcon, Phone, Save, ChevronRight, History } from "lucide-react"
+import { Search, Receipt, CreditCard, DollarSign, IndianRupee, Calendar, Clock, Info, Check, X, Package, ChevronLeft, PackageCheck, Trash2, Plus, User as UserIcon, Phone, Save, ChevronRight, History, Printer } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
@@ -169,6 +169,108 @@ export default function PharmacyPage() {
     setEditableProducts(JSON.parse(JSON.stringify(exam.products || []))) // Deep copy
     setShowBillModal(true)
     fetchBillingData(exam.examination_id)
+  }
+
+  const handlePrintReceipt = () => {
+    const printContent = document.getElementById('pharmacy-receipt-content');
+    if (!printContent) return;
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Pharmacy Receipt - ${selectedExam?.patient_name}</title>
+          <style>
+            body { font-family: sans-serif; padding: 40px; color: #333; }
+            .header { text-align: center; border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 30px; }
+            .hospital-name { font-size: 24px; font-weight: bold; margin: 0; }
+            .receipt-title { font-size: 18px; color: #666; margin-top: 5px; }
+            .details { display: flex; justify-content: space-between; margin-bottom: 30px; }
+            .patient-info p, .bill-info p { margin: 5px 0; }
+            .label { font-weight: bold; color: #888; text-transform: uppercase; font-size: 12px; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+            th { text-align: left; background: #f9f9f9; padding: 12px; border-bottom: 2px solid #eee; font-size: 13px; }
+            td { padding: 12px; border-bottom: 1px solid #eee; font-size: 14px; }
+            .totals { float: right; width: 300px; }
+            .total-row { display: flex; justify-content: space-between; padding: 8px 0; }
+            .grand-total { border-top: 2px solid #333; margin-top: 10px; padding-top: 10px; font-weight: bold; font-size: 18px; }
+            .footer { margin-top: 100px; text-align: center; font-size: 12px; color: #aaa; border-top: 1px solid #eee; padding-top: 20px; }
+            @media print {
+              .no-print { display: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1 class="hospital-name">Skin & Hair Clinic</h1>
+            <p class="receipt-title">Pharmacy Bill Receipt</p>
+          </div>
+          <div class="details">
+            <div class="patient-info">
+              <p><span class="label">Patient Name:</span><br>${selectedExam?.patient_name}</p>
+              <p><span class="label">Patient ID:</span><br>${selectedExam?.patient_code}</p>
+              <p><span class="label">Contact:</span><br>${selectedExam?.mobile || 'N/A'}</p>
+            </div>
+            <div class="bill-info">
+              <p><span class="label">Receipt No:</span><br>#PH-${billingData?.id || 'NEW'}</p>
+              <p><span class="label">Date:</span><br>${new Date().toLocaleDateString()}</p>
+              <p><span class="label">Status:</span><br>${billingData?.balanceAmount > 0 ? 'PARTIAL' : 'PAID'}</p>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Item Description</th>
+                <th>Qty</th>
+                <th style="text-align: right;">Price</th>
+                <th style="text-align: right;">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${editableProducts.map((p: any) => {
+                const price = parseFloat(p.price) || 0;
+                const qty = parseInt(p.quantity) || 0;
+                return `
+                  <tr>
+                    <td>${p.service}</td>
+                    <td>${qty}</td>
+                    <td style="text-align: right;">₹${price.toLocaleString()}</td>
+                    <td style="text-align: right;">₹${(price * qty).toLocaleString()}</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+          <div class="totals">
+            <div class="total-row">
+              <span>Total Bill Amount:</span>
+              <span>₹${(billingData?.totalAmount || 0).toLocaleString()}</span>
+            </div>
+            <div class="total-row">
+              <span>Paid Amount:</span>
+              <span>₹${(billingData?.paidAmount || 0).toLocaleString()}</span>
+            </div>
+            <div class="total-row grand-total">
+              <span>Balance Due:</span>
+              <span>₹${(billingData?.balanceAmount || 0).toLocaleString()}</span>
+            </div>
+          </div>
+          <div class="footer">
+            <p>Thank you for choosing our services.</p>
+            <p>This is a computer-generated receipt.</p>
+          </div>
+          <script>
+            window.onload = () => {
+              window.print();
+              window.onafterprint = () => window.close();
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
   }
 
   const handleProductChange = (index: number, field: string, value: string) => {
@@ -688,6 +790,7 @@ export default function PharmacyPage() {
                             <TableHead className="font-black text-gray-800 text-xs uppercase tracking-wider">Patient Info</TableHead>
                             <TableHead className="font-black text-gray-800 text-xs uppercase tracking-wider">Prescribed Items</TableHead>
                             <TableHead className="font-black text-gray-800 text-center text-xs uppercase tracking-wider">Total Amount</TableHead>
+                            <TableHead className="font-black text-gray-800 text-center text-xs uppercase tracking-wider">Due Amount</TableHead>
                             <TableHead className="font-black text-gray-800 text-center text-xs uppercase tracking-wider">Status</TableHead>
                             <TableHead className="font-black text-gray-800 text-right py-5 px-8 text-xs uppercase tracking-wider">Actions</TableHead>
                           </TableRow>
@@ -695,7 +798,7 @@ export default function PharmacyPage() {
                         <TableBody>
                           {loading ? (
                             <TableRow>
-                              <TableCell colSpan={6} className="text-center py-24">
+                              <TableCell colSpan={7} className="text-center py-24">
                                 <div className="flex flex-col items-center gap-4">
                                   <div className="relative">
                                     <div className="h-14 w-14 rounded-full border-4 border-blue-100 border-t-blue-600 animate-spin"></div>
@@ -706,7 +809,7 @@ export default function PharmacyPage() {
                             </TableRow>
                           ) : billedProducts.length === 0 ? (
                             <TableRow>
-                              <TableCell colSpan={6} className="text-center py-24">
+                              <TableCell colSpan={7} className="text-center py-24">
                                 <div className="max-w-md mx-auto space-y-3 opacity-60">
                                   <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto">
                                     <Search className="h-10 w-10 text-gray-400" />
@@ -747,7 +850,18 @@ export default function PharmacyPage() {
                                 </TableCell>
                                 <TableCell className="text-center">
                                   <span className="text-lg font-black text-gray-900">
-                                    ₹{exam.products?.reduce((acc: number, p: any) => acc + (parseFloat(p.price) || 0) * (parseInt(p.quantity) || 0), 0).toLocaleString() || 0}
+                                    ₹{((exam.total_amount !== undefined && exam.total_amount !== null)
+                                      ? exam.total_amount
+                                      : (exam.products?.reduce((acc: number, p: any) => acc + (parseFloat(p.price) || 0) * (parseInt(p.quantity) || 0), 0) || 0)
+                                    ).toLocaleString()}
+                                  </span>
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  <span className="text-lg font-black text-red-600">
+                                    ₹{((exam.due_amount !== undefined && exam.due_amount !== null)
+                                      ? exam.due_amount
+                                      : (exam.products?.reduce((acc: number, p: any) => acc + (parseFloat(p.price) || 0) * (parseInt(p.quantity) || 0), 0) || 0)
+                                    ).toLocaleString()}
                                   </span>
                                 </TableCell>
                                 <TableCell className="text-center">
@@ -779,15 +893,6 @@ export default function PharmacyPage() {
                                       title="Mark Received"
                                     >
                                       <Check className="h-5 w-5" />
-                                    </Button>
-                                    <Button 
-                                      variant="outline" 
-                                      size="icon" 
-                                      className="h-10 w-10 text-indigo-600 border-indigo-200 hover:bg-indigo-50 rounded-xl transition-all"
-                                      onClick={() => handleOpenBillModal(exam)}
-                                      title="Billing Information"
-                                    >
-                                      <Receipt className="h-5 w-5" />
                                     </Button>
                                   </div>
                                 </TableCell>
@@ -1017,7 +1122,7 @@ export default function PharmacyPage() {
 
             {/* Pharmacy Billing Modal */}
             <Dialog open={showBillModal} onOpenChange={setShowBillModal}>
-              <DialogContent className="max-w-4xl p-0 overflow-hidden border-0 rounded-3xl shadow-2xl">
+              <DialogContent className="max-w-[98vw] w-full p-0 overflow-hidden border-0 rounded-3xl shadow-2xl h-[95vh] flex flex-col">
                 <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-8 text-white">
                   <DialogHeader>
                     <div className="flex items-center justify-between">
@@ -1039,14 +1144,40 @@ export default function PharmacyPage() {
                     <p className="text-gray-400 font-bold">Synchronizing billing records...</p>
                   </div>
                 ) : (
-                  <div className="p-8 space-y-8 max-h-[70vh] overflow-y-auto bg-white">
-                    <div className="grid grid-cols-2 gap-8">
-                      <div className="space-y-6">
-                        <h3 className="text-sm font-black uppercase tracking-wider text-gray-400 flex items-center gap-2">
-                          <Package className="h-4 w-4 text-blue-500" />
-                          Medicine Dispatch Items
-                        </h3>
-                        <div className="space-y-4">
+                  <div className="p-4 md:p-8 space-y-8 flex-1 overflow-y-auto bg-white custom-scrollbar">
+                    {/* Patient and Billing Summary */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="md:col-span-1 bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Patient Info</p>
+                        <p className="font-bold text-gray-900 truncate">{selectedExam?.patient_name}</p>
+                        <p className="text-xs text-blue-500 font-bold">{selectedExam?.patient_code}</p>
+                        <p className="text-xs text-gray-400 mt-1">{selectedExam?.mobile || 'No Mobile'}</p>
+                      </div>
+                      <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100">
+                        <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Total Bill</p>
+                        <p className="text-2xl font-black text-blue-900">₹{(billingData?.totalAmount || 0).toLocaleString()}</p>
+                      </div>
+                      <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100">
+                        <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1">Paid Amount</p>
+                        <p className="text-2xl font-black text-emerald-900">₹{(billingData?.paidAmount || 0).toLocaleString()}</p>
+                      </div>
+                      <div className="bg-red-50 p-4 rounded-2xl border border-red-100">
+                        <p className="text-[10px] font-black text-red-400 uppercase tracking-widest mb-1">Due Amount</p>
+                        <p className="text-2xl font-black text-red-900">₹{(billingData?.balanceAmount || 0).toLocaleString()}</p>
+                      </div>
+                    </div>
+
+                    <Separator className="bg-gray-100" />
+
+                    <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+                      <div className="xl:col-span-2 space-y-6">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-sm font-black uppercase tracking-wider text-gray-400 flex items-center gap-2">
+                            <Package className="h-4 w-4 text-blue-500" />
+                            Prescribed Medicines
+                          </h3>
+                        </div>
+                        <div className="space-y-3" id="pharmacy-receipt-content">
                           {editableProducts
                             .filter((p: any) => {
                               const master = serviceProducts.find(sp => sp.name.toLowerCase().trim() === (p.service || "").toLowerCase().trim());
@@ -1054,33 +1185,42 @@ export default function PharmacyPage() {
                             })
                             .map((p: any, idx: number) => {
                               const masterProduct = serviceProducts.find(sp => sp.name.toLowerCase().trim() === (p.service || "").toLowerCase().trim());
-                              const masterPrice = masterProduct ? parseFloat(masterProduct.amount) : 0;
-                              const price = masterProduct ? masterPrice : ((p.price === undefined || p.price === null || p.price === '') ? 0 : parseFloat(p.price));
-                              const qty = (p.quantity === undefined || p.quantity === null || p.quantity === '') ? 1 : parseInt(p.quantity);
+                              const price = masterProduct ? parseFloat(masterProduct.amount) : (parseFloat(p.price) || 0);
+                              const qty = parseInt(p.quantity) || 0;
                               
                               return (
-                                <div key={idx} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100 group transition-all hover:bg-blue-50/50">
-                                  <div className="space-y-1">
-                                    <p className="font-bold text-gray-900">{p.service}</p>
-                                    <div className="flex items-center gap-3">
+                                <div key={idx} className="flex items-center justify-between p-4 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all group">
+                                  <div className="space-y-1 flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <p className="font-bold text-gray-900">{p.service}</p>
+                                      {masterProduct && <Badge className="bg-blue-50 text-blue-600 text-[9px] h-4">Stock</Badge>}
+                                    </div>
+                                    <div className="flex items-center gap-4">
                                       <div className="flex flex-col">
-                                        <span className="text-[10px] font-black text-gray-400 uppercase">Days Supply</span>
-                                        <Input
-                                          type="number"
-                                          className="h-8 w-16 text-center text-xs font-black rounded-lg border-gray-200 mt-0.5 bg-white text-blue-600 ring-1 ring-blue-50"
-                                          value={p.days}
-                                          onChange={(e) => handleProductChange(idx, 'days', e.target.value)}
-                                        />
+                                        <span className="text-[9px] font-black text-gray-400 uppercase">Unit Price</span>
+                                        <span className="text-sm font-bold text-gray-600">₹{price.toLocaleString()}</span>
                                       </div>
-                                      <span className="pt-4 text-xs text-gray-400">₹{price.toLocaleString()} / Unit</span>
+                                      <div className="flex flex-col">
+                                        <span className="text-[9px] font-black text-gray-400 uppercase">Subtotal</span>
+                                        <span className="text-sm font-black text-blue-600">₹{(price * qty).toLocaleString()}</span>
+                                      </div>
                                     </div>
                                   </div>
-                                  <div className="flex items-center gap-4">
-                                    <div className="flex flex-col items-end">
-                                      <span className="text-[10px] font-black text-gray-400 uppercase">Qty</span>
+                                  <div className="flex items-center gap-3">
+                                    <div className="flex flex-col items-center">
+                                      <span className="text-[9px] font-black text-gray-400 uppercase">Days</span>
+                                      <Input
+                                        type="number"
+                                        className="h-9 w-14 text-center text-xs font-bold rounded-xl border-gray-100 bg-gray-50 focus:bg-white transition-all"
+                                        value={p.days}
+                                        onChange={(e) => handleProductChange(idx, 'days', e.target.value)}
+                                      />
+                                    </div>
+                                    <div className="flex flex-col items-center">
+                                      <span className="text-[9px] font-black text-gray-400 uppercase">Qty</span>
                                       <Input 
                                         type="number" 
-                                        className="w-16 h-10 text-center font-black rounded-xl border-gray-200 mt-1" 
+                                        className="h-9 w-14 text-center text-xs font-black rounded-xl border-gray-100 bg-blue-50/30 text-blue-700 focus:bg-white transition-all" 
                                         value={p.quantity} 
                                         onChange={(e) => handleProductChange(idx, 'quantity', e.target.value)}
                                       />
@@ -1091,26 +1231,26 @@ export default function PharmacyPage() {
                             })}
                         </div>
                         <Button 
-                          className="w-full h-12 rounded-2xl bg-white border-2 border-blue-100 text-blue-600 font-black hover:bg-blue-50 mt-4 transition-all"
+                          className="w-full h-12 rounded-2xl bg-indigo-50 text-indigo-600 font-bold hover:bg-indigo-100 border-none transition-all"
                           onClick={handleUpdateProducts}
                           disabled={billingLoading}
                         >
-                          Update Billing Totals
+                          Recalculate & Update Items
                         </Button>
                       </div>
 
-                      <div className="space-y-6">
+                      <div className="xl:col-span-1 space-y-6">
                         <h3 className="text-sm font-black uppercase tracking-wider text-gray-400 flex items-center gap-2">
                           <DollarSign className="h-4 w-4 text-emerald-500" />
-                          Payment & Collection
+                          Payment Collection
                         </h3>
-                        <div className="bg-gray-900 rounded-3xl p-6 text-white space-y-6 shadow-xl shadow-gray-200">
-                          <div className="space-y-4">
+                        <Card className="bg-slate-900 border-0 rounded-3xl overflow-hidden shadow-xl">
+                          <CardContent className="p-6 space-y-6">
                             <div className="grid grid-cols-2 gap-4">
                               <div className="space-y-2">
-                                <Label className="text-xs font-bold text-gray-400 uppercase">Pay Via</Label>
+                                <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Payment Method</Label>
                                 <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                                  <SelectTrigger className="h-11 bg-white/5 border-white/10 text-white rounded-xl">
+                                  <SelectTrigger className="h-12 bg-white/5 border-white/10 text-white rounded-xl focus:ring-emerald-500/20">
                                     <SelectValue />
                                   </SelectTrigger>
                                   <SelectContent>
@@ -1122,37 +1262,55 @@ export default function PharmacyPage() {
                                 </Select>
                               </div>
                               <div className="space-y-2">
-                                <Label className="text-xs font-bold text-gray-400 uppercase">Amount</Label>
-                                <Input
-                                  type="number"
-                                  className="h-11 bg-white/5 border-white/10 text-white rounded-xl font-bold"
-                                  value={paymentAmount}
-                                  onChange={(e) => setPaymentAmount(e.target.value)}
-                                />
+                                <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Payable Amount</Label>
+                                <div className="relative">
+                                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-400 font-bold">₹</span>
+                                  <Input
+                                    type="number"
+                                    className="h-12 pl-8 bg-white/5 border-white/10 text-white rounded-xl font-bold focus:ring-emerald-500/20"
+                                    value={paymentAmount}
+                                    onChange={(e) => setPaymentAmount(e.target.value)}
+                                    placeholder="0.00"
+                                  />
+                                </div>
                               </div>
                             </div>
                             <Button
-                              className="w-full h-12 bg-emerald-500 hover:bg-emerald-600 text-white font-black rounded-xl shadow-lg shadow-emerald-900/20 transition-all active:scale-[0.98]"
+                              className="w-full h-14 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-lg rounded-2xl shadow-lg shadow-emerald-500/20 transition-all hover:translate-y-[-2px] active:translate-y-0"
                               onClick={handleAddPayment}
-                              disabled={billingLoading}
+                              disabled={billingLoading || !paymentAmount || parseFloat(paymentAmount) <= 0}
                             >
-                              Collect Payment
+                              Confirm Payment
                             </Button>
-                          </div>
-                        </div>
+                          </CardContent>
+                        </Card>
 
                         <div className="space-y-4">
-                          <h4 className="text-xs font-black uppercase tracking-wider text-gray-400">Installment Log</h4>
-                          <div className="space-y-3 max-h-[180px] overflow-y-auto pr-2 custom-scrollbar">
-                            {billingData?.installments?.map((inst: any) => (
-                              <div key={inst.id} className="flex items-center justify-between p-3 border border-gray-100 rounded-xl">
-                                <div className="flex flex-col">
-                                  <span className="text-[10px] font-black text-gray-400 uppercase">{formatDate(inst.paymentDate)}</span>
-                                  <span className="text-sm font-bold text-gray-700 capitalize">{inst.paymentMethod}</span>
-                                </div>
-                                <span className="font-black text-emerald-600">₹{parseFloat(inst.amount).toLocaleString()}</span>
+                          <div className="flex items-center justify-between">
+                            <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Payment History</h4>
+                            <Badge variant="outline" className="text-[9px] border-gray-100 text-gray-400">{billingData?.installments?.length || 0} Records</Badge>
+                          </div>
+                          <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
+                            {billingData?.installments?.length === 0 ? (
+                              <div className="text-center py-8 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                                <p className="text-xs text-gray-400 font-bold">No payments recorded yet</p>
                               </div>
-                            ))}
+                            ) : (
+                              billingData?.installments?.map((inst: any) => (
+                                <div key={inst.id} className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600">
+                                      <Check className="h-4 w-4" />
+                                    </div>
+                                    <div className="flex flex-col">
+                                      <span className="text-xs font-bold text-gray-900 capitalize">{inst.paymentMethod}</span>
+                                      <span className="text-[9px] font-bold text-gray-400">{formatDate(inst.paymentDate)}</span>
+                                    </div>
+                                  </div>
+                                  <span className="font-black text-emerald-600 text-sm">₹{parseFloat(inst.amount).toLocaleString()}</span>
+                                </div>
+                              ))
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1160,14 +1318,23 @@ export default function PharmacyPage() {
                   </div>
                 )}
                 
-                <div className="p-6 bg-gray-50 border-t flex justify-end">
-                   <Button 
+                <div className="p-6 bg-gray-50 border-t flex justify-between items-center">
+                  <Button 
                     variant="outline" 
-                    className="rounded-xl h-11 px-8 font-bold border-gray-200 text-gray-600 hover:bg-white"
+                    className="rounded-xl h-12 px-6 font-bold border-emerald-200 text-emerald-600 hover:bg-emerald-50 flex items-center gap-2 transition-all shadow-sm"
+                    onClick={handlePrintReceipt}
+                    disabled={!billingData}
+                  >
+                    <Printer className="h-4 w-4" />
+                    Generate Receipt
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    className="rounded-xl h-12 px-8 font-bold text-gray-500 hover:bg-gray-100"
                     onClick={() => setShowBillModal(false)}
-                   >
-                    Close Billing
-                   </Button>
+                  >
+                    Close
+                  </Button>
                 </div>
               </DialogContent>
             </Dialog>

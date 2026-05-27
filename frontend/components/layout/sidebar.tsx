@@ -340,21 +340,21 @@ const SidebarItem = memo(({
     <button
       onClick={toggleOpen}
       className={cn(
-        "flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground cursor-pointer",
+        "flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition-all duration-300 group hover:bg-blue-50/50",
         level > 0 && !isCollapsed && "ml-4",
-        isActive && "bg-primary text-primary-foreground shadow-sm",
+        isActive && "bg-blue-50 text-blue-600 shadow-sm border-l-4 border-blue-600 rounded-l-none",
         isCollapsed && "px-0 justify-center h-12 w-12 mx-auto"
       )}
     >
       <div className={cn("flex items-center gap-3", isCollapsed && "justify-center w-full")}>
-        <item.icon className="h-4 w-4 flex-shrink-0" />
+        <item.icon className={cn("h-4 w-4 flex-shrink-0 transition-transform group-hover:scale-110", isActive ? "text-blue-600" : "text-gray-400")} />
         {!isCollapsed && <span className="truncate">{item.title}</span>}
       </div>
       {!isCollapsed && (
         isOpen ? (
-          <ChevronDown className="h-4 w-4 flex-shrink-0" />
+          <ChevronDown className="h-4 w-4 flex-shrink-0 opacity-50" />
         ) : (
-          <ChevronRight className="h-4 w-4 flex-shrink-0" />
+          <ChevronRight className="h-4 w-4 flex-shrink-0 opacity-50" />
         )
       )}
     </button>
@@ -363,13 +363,13 @@ const SidebarItem = memo(({
       href={href}
       onClick={onItemClick}
       className={cn(
-        "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground text-left cursor-pointer",
+        "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all duration-300 group hover:bg-blue-50/50 text-left",
         level > 0 && !isCollapsed && "ml-4",
         isCollapsed && "px-0 justify-center h-10 w-10 mx-auto",
-        isActive && "bg-primary text-primary-foreground",
+        isActive && "bg-blue-50 text-blue-600 shadow-sm border-l-4 border-blue-600 rounded-l-none",
       )}
     >
-      <item.icon className="h-4 w-4 flex-shrink-0" />
+      <item.icon className={cn("h-4 w-4 flex-shrink-0 transition-transform group-hover:scale-110", isActive ? "text-blue-600" : "text-gray-400")} />
       {!isCollapsed && <span className="truncate">{item.title}</span>}
     </Link>
   )
@@ -462,27 +462,34 @@ const DesktopSidebar = memo(() => {
       "hidden lg:flex h-full flex-col bg-card border-r border-border transition-all duration-300",
       isCollapsed ? "w-20" : "w-64"
     )}>
-      {/* Logo */}
+      {/* Logo Section - Premium Refresh */}
       <div className={cn(
-        "flex items-center gap-2 border-b border-border h-16 transition-all duration-300",
-        isCollapsed ? "justify-center px-2" : "justify-between px-6"
+        "flex items-center gap-3 h-20 transition-all duration-300 relative overflow-hidden",
+        isCollapsed ? "justify-center px-2" : "px-6"
       )}>
+        {/* Subtle background glow for logo */}
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-transparent pointer-events-none" />
+        
         {!isCollapsed ? (
           <>
-            <img
-              src="/images/vithyou.png"
-              alt="VithYou Logo"
-              className="w-32 m-0 object-contain"
-              onError={(e) => {
-                e.currentTarget.src = "/images/vithyou.png"
-              }}
-            />
-            <Button variant="ghost" size="sm" onClick={toggleSidebar} className="p-1 h-8 w-8">
+            <div className="flex items-center gap-3">
+              <div className="bg-white p-1 rounded-xl shadow-sm border border-blue-50">
+                <img
+                  src="/images/vithyou.png"
+                  alt="V-Pride Logo"
+                  className="h-8 w-8 object-contain"
+                  onError={(e) => {
+                    e.currentTarget.src = "/images/vithyou.png"
+                  }}
+                />
+              </div>
+            </div>
+            <Button variant="ghost" size="sm" onClick={toggleSidebar} className="p-1 h-8 w-8 hover:bg-blue-50 text-gray-400 hover:text-blue-600 transition-all">
               <Menu className="h-4 w-4" />
             </Button>
           </>
         ) : (
-          <Button variant="ghost" size="sm" onClick={toggleSidebar} className="p-1 h-8 w-8">
+          <Button variant="ghost" size="sm" onClick={toggleSidebar} className="p-1 h-8 w-8 hover:bg-blue-50 text-gray-400 hover:text-blue-600">
             <Menu className="h-4 w-4" />
           </Button>
         )}

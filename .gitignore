@@ -44,3 +44,11 @@ next-env.d.ts
 
 # temporary/scratch files
 scratch/
+
+# build artifacts and archives
+*.zip
+*.tar.gz
+HIMSMobileRN/
+
+# exclude frontend images
+frontend/public/images/

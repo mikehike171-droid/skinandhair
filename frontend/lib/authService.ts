@@ -1,8 +1,9 @@
 // src/lib/authService.ts
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://16.16.182.202:3002/api';
-const API_Domain_URL = process.env.NEXT_PUBLIC_API_URL || 'http://16.16.182.202:3002/api';
-const SETTINGS_API_URL = process.env.NEXT_PUBLIC_SETTINGS_API_URL || 'http://16.16.182.202:3002/api';
-const FRONT_OFFICE_API_URL = process.env.NEXT_PUBLIC_FRONT_OFFICE_API_URL || 'http://16.16.182.202:3002/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://13.62.241.115:3002/api';
+const API_Domain_URL = process.env.NEXT_PUBLIC_API_URL || 'http://13.62.241.115:3002/api';
+const SETTINGS_API_URL = process.env.NEXT_PUBLIC_SETTINGS_API_URL || 'http://13.62.241.115:3002/api';
+//const SETTINGS_API_URL = process.env.NEXT_PUBLIC_SETTINGS_API_URL || 'http://localhost:3002/api';
+const FRONT_OFFICE_API_URL = process.env.NEXT_PUBLIC_FRONT_OFFICE_API_URL || 'http://13.62.241.115:3002/api';
 
 // Initialize API URLs in localStorage (called when needed)
 const initializeApiUrls = () => {
@@ -127,11 +128,11 @@ const getApiDomainUrl = () => {
 };
 
 const getSettingsApiUrl = () => {
-  return process.env.NEXT_PUBLIC_SETTINGS_API_URL || 'http://98.94.89.173:3002/api';
+  return process.env.NEXT_PUBLIC_SETTINGS_API_URL || 'http://13.62.241.115:3002/api';
 };
 
 const getFrontOfficeApiUrl = () => {
-  return process.env.NEXT_PUBLIC_FRONT_OFFICE_API_URL || 'http://98.94.89.173:3002/api';
+  return process.env.NEXT_PUBLIC_FRONT_OFFICE_API_URL || 'http://13.62.241.115:3002/api';
 };
 
 const getSelectedBranchId = () => {
