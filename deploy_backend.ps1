@@ -29,15 +29,18 @@ tar.exe -czf backend_build.tar.gz -C "backend/settings-service" dist package.jso
 Write-Host "[3] Transferring..." -ForegroundColor Yellow
 scp -i $KEY backend_build.tar.gz "${USR}@${IP}:${DIR}/"
 scp -i $KEY backend/settings-service/.env "${USR}@${IP}:${DIR}/backend/settings-service/.env"
+scp -i $KEY clean_logs.sh "${USR}@${IP}:/home/ubuntu/clean_logs.sh"
 
 # 4. Remote Commands
 Write-Host "[4] Restarting on server..." -ForegroundColor Yellow
 $C1 = "tar -xzf $DIR/backend_build.tar.gz -C $DIR/backend/settings-service"
 $C2 = "cd $DIR/backend/settings-service && npm install --omit=dev"
-$C3 = "pm2 restart backend || pm2 start dist/main.js --name backend"
-$C4 = "pm2 status"
+$C3 = "pm2 restart backend || pm2 start dist/main.js --name backend --time"
+$C4 = "chmod +x /home/ubuntu/clean_logs.sh"
+$C5 = "(crontab -l 2>/dev/null | grep -F 'clean_logs.sh') || (crontab -l 2>/dev/null; echo '0 * * * * /home/ubuntu/clean_logs.sh >> /home/ubuntu/clean_logs.log 2>&1') | crontab -"
+$C6 = "pm2 status"
 
-$REMOTE_EXEC = "$C1 ; $C2 ; $C3 ; $C4"
+$REMOTE_EXEC = "$C1 ; $C2 ; $C3 ; $C4 ; $C5 ; $C6"
 
 ssh -i $KEY "${USR}@${IP}" "$REMOTE_EXEC"
 
