@@ -36,10 +36,13 @@ tar.exe -czf frontend_build.tar.gz -C "frontend" .next public package.json packa
 
 # 3. Transfer Artifacts and Env files
 Write-Host "`n[3/5] Transferring files to server..." -ForegroundColor Yellow
+Start-Sleep -Seconds 3
 scp -i "$SSH_KEY" "backend_build.tar.gz" "frontend_build.tar.gz" "${USER}@${SERVER_IP}:${REMOTE_PATH}/"
-# Transfer secrets
+Start-Sleep -Seconds 3
 scp -i "$SSH_KEY" "backend/settings-service/.env" "${USER}@${SERVER_IP}:${REMOTE_PATH}/backend/settings-service/.env"
+Start-Sleep -Seconds 3
 scp -i "$SSH_KEY" "frontend/.env.local" "${USER}@${SERVER_IP}:${REMOTE_PATH}/frontend/.env.local"
+Start-Sleep -Seconds 3
 scp -i "$SSH_KEY" "clean_logs.sh" "${USER}@${SERVER_IP}:/home/ubuntu/clean_logs.sh"
 
 # 4. Remote Extraction and Cleanup
@@ -82,6 +85,7 @@ cd $REMOTE_PATH
 rm backend_build.tar.gz frontend_build.tar.gz
 "@
 
+Start-Sleep -Seconds 3
 ssh -i "$SSH_KEY" "${USER}@${SERVER_IP}" "$REMOTE_COMMANDS"
 
 Write-Host "`nDeployment Complete!" -ForegroundColor Green
